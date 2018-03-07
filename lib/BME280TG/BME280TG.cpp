@@ -11,8 +11,6 @@ BME280TG::BME280TG() {
 
 void BME280TG::get(units_t *event) {
 
-    uint8_t pressureUnit(HPA);
-
     BME280::TempUnit tempUnit(BME280::TempUnit_Celsius);
     BME280::PresUnit presUnit(BME280::PresUnit_hPa);
 

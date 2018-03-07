@@ -12,7 +12,7 @@ typedef enum {
 
 typedef enum {
     // unit: B000 = Pa, B001 = hPa, B010 = Hg, B011 = atm, B100 = bar, B101 = torr, B110 = N/m^2, B111 = psi
-            PA = (0),
+    PA = (0),
     HPA = (1),
     HG = (2),
     ATM = (3),

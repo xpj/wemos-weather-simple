@@ -4,3 +4,4 @@
 .travis.yml
 cmake-build-debug
 CMakeListsPrivate.txt
+*/secrets.h
