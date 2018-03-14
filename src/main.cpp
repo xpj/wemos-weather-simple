@@ -2,6 +2,7 @@
 #include <Arduino.h>
 #include <SPI.h>
 #include <ESP8266WiFi.h>
+#include "AdafruitIO_WiFi.h"
 #include "BlynkSimpleEsp8266.h"
 #include "SSD1306Ascii.h"
 #include "SSD1306AsciiWire.h"
@@ -13,14 +14,17 @@
 #define SCLPIN  5
 #define SDAPIN  4
 
-char blynkAuthToken[] = SECRET_BLYNK_TOKEN;
-
-char ssid[] = SECRET_WIFI_SSID;
-char pass[] = SECRET_WIFI_PASS;
+#define AIO_GROUP "simple-weather-station"
+#define AIO_TEMP "temperature"
+#define AIO_HUMIDITY "humidity"
+#define AIO_PRESSURE "pressure"
 
 SSD1306AsciiWire oled;
 BME280TG *bme280TG;
 BlynkTimer timer;
+AdafruitIO_WiFi aio(SECRET_AIO_USERNAME, SECRET_AIO_TOKEN, SECRET_WIFI_SSID, SECRET_WIFI_PASS);
+AdafruitIO_Group *group = aio.group(AIO_GROUP);
+
 
 void toSerial(units_t event280) {
     Serial.print("Temperature: ");
@@ -52,12 +56,20 @@ void toBlynk(units_t event280) {
     Blynk.virtualWrite(V2, bme280TG->getPressure(event280));
 }
 
+void toAio(units_t event280) {
+    group->set(AIO_TEMP, bme280TG->getTemperature(event280));
+    group->set(AIO_HUMIDITY, bme280TG->getHumidity(event280));
+    group->set(AIO_PRESSURE, bme280TG->getPressure(event280));
+    group->save();
+}
+
 void process() {
     units_t event280;
     bme280TG->get(&event280);
     toSerial(event280);
     toDisplay(event280);
     toBlynk(event280);
+    toAio(event280);
 }
 
 //------------------------------------------------------------------------------
@@ -67,12 +79,6 @@ void setup() {
     Wire.setClock(400000L);
 
     oled.begin(&MicroOLED64x48, I2C_ADDRESS);
-    Blynk.begin(blynkAuthToken, ssid, pass);
-    bme280TG = new BME280TG();
-    timer.setInterval(5000L, process);
-
-    delay(50);
-
     oled.clear();
     oled.setFont(System5x7);
     oled.println("xpj.ninja");
@@ -81,10 +87,21 @@ void setup() {
     oled.println("Weather");
     oled.println("Station");
 
+    bme280TG = new BME280TG();
+
+    Blynk.begin(SECRET_BLYNK_TOKEN, SECRET_WIFI_SSID, SECRET_WIFI_PASS);
+
+    aio.connect();
+    while(aio.status() < AIO_CONNECTED) {
+        delay(500);
+    }
+    timer.setInterval(5000L, process);
+
     delay(5000);
 }
 
 void loop() {
+    aio.run();
     Blynk.run();
     timer.run();
 }

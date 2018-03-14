@@ -30,3 +30,12 @@ Simple Weather Station
 - Blynk
   - pio id #415
   - (https://platformio.org/lib/show/415/Blynk)
+- Adafruit IO Arduino
+  - pio id #714
+  - (https://platformio.org/lib/show/714/Adafruit%20IO%20Arduino)
+- Adafruit MQTT Library
+  - pio id #1092
+  - (https://platformio.org/lib/show/1092/Adafruit%20MQTT%20Library)  
+- Arduino Http Client
+  - pio id #798
+  - (https://platformio.org/lib/show/798/ArduinoHttpClient)  

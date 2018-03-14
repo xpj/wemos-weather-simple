@@ -5,4 +5,7 @@
 #define SECRET_WIFI_SSID "ssid"
 #define SECRET_WIFI_PASS "pass"
 
+#define SECRET_AIO_USERNAME "username"
+#define SECRET_AIO_TOKEN "token"
+
 #endif //WEMOSWEATHERSIMPLE_SECRETS_H
