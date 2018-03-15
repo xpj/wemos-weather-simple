@@ -19,23 +19,23 @@
 # Travis CI documentation (see above).
 #
 
- language: python
- python:
-     - "2.7"
+language: python
+python:
+  - "2.7"
 
- sudo: false
- cache:
-     directories:
-         - "~/.platformio"
+sudo: false
+cache:
+  directories:
+    - "~/.platformio"
 
 env:
-    - PLATFORMIO_CI_SRC=src/
+  - PLATFORMIO_CI_SRC=src/
 
- install:
-     - pip install -U platformio
-     - platformio update
-     - platformio lib install 13 135 901 415 5169 714 1092 798
+install:
+  - pip install -U platformio
+  - platformio update
+  - platformio lib install 13 135 901 415 5169 714 1092 798
 
- script:
-     - platformio run
+script:
+  - platformio run
 
