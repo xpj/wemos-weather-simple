@@ -34,6 +34,7 @@ env:
  install:
      - pip install -U platformio
      - platformio update
+     - platformio lib install 13 135 901 415 5169 714 1092 798
 
  script:
      - platformio run
