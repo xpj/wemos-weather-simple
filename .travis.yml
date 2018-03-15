@@ -28,6 +28,9 @@
      directories:
          - "~/.platformio"
 
+env:
+    - PLATFORMIO_CI_SRC=src/
+
  install:
      - pip install -U platformio
      - platformio update
