@@ -36,5 +36,5 @@ env:
      - platformio update
 
  script:
-     - platformio ci
+     - platformio run
 
