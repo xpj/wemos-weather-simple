@@ -36,6 +36,12 @@ install:
   - platformio update
   - platformio lib install 13 135 901 415 5169 714 1092 798
 
+before_script:
+  - cp $PLATFORMIO_CI_SRC/secrets_template.h $PLATFORMIO_CI_SRC/secrets.h
+
 script:
   - platformio run
+
+after_script:
+  - rm -f $PLATFORMIO_CI_SRC/secrets_template.h
 
