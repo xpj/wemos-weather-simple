@@ -1,5 +1,7 @@
-# wemos-weather-simple
+# wemos-weather-simple [![Build Status](https://travis-ci.org/xpj/wemos-weather-simple.svg?branch=master)](https://travis-ci.org/xpj/wemos-weather-simple)
 Simple Weather Station
+
+
 
 ![sws.jpg](sws.jpg "Simple Weather Station")
 
