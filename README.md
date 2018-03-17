@@ -39,3 +39,6 @@ Simple Weather Station
 - Arduino Http Client
   - pio id #798
   - (https://platformio.org/lib/show/798/ArduinoHttpClient)  
+- ArduinoJson
+  - pio id #64
+  - (https://platformio.org/lib/show/64/ArduinoJson)  

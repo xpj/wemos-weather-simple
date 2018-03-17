@@ -2,11 +2,13 @@
 #include <Arduino.h>
 #include <SPI.h>
 #include <ESP8266WiFi.h>
+#include <ESP8266WebServer.h>
 #include "AdafruitIO_WiFi.h"
 #include "BlynkSimpleEsp8266.h"
 #include "SSD1306Ascii.h"
 #include "SSD1306AsciiWire.h"
 #include "BME280TG.h"
+#include "ArduinoJson.h"
 
 #include "secrets.h"
 
@@ -19,6 +21,7 @@
 #define AIO_HUMIDITY "humidity"
 #define AIO_PRESSURE "pressure"
 
+ESP8266WebServer webServer(80);
 SSD1306AsciiWire oled;
 BME280TG *bme280TG;
 BlynkTimer timer;
@@ -27,6 +30,10 @@ AdafruitIO_Group *group = aio.group(AIO_GROUP);
 
 
 void toSerial(units_t event280) {
+    Serial.println("---------------");
+    Serial.print("IP address: ");
+    Serial.println(WiFi.localIP());
+    Serial.println("---------------");
     Serial.print("Temperature: ");
     Serial.print(bme280TG->getTemperature(event280));
     Serial.println(" C");
@@ -72,7 +79,32 @@ void process() {
     toAio(event280);
 }
 
+String pingStatus() {
+    String output;
+    StaticJsonBuffer<200> jsonBuffer;
+
+    JsonObject& pong = jsonBuffer.createObject();
+
+    pong["chipId"] = ESP.getChipId();
+    pong["sdkVersion"] = ESP.getSdkVersion();
+    pong["coreVersion"] = ESP.getCoreVersion();
+    pong["bootVersion"] = ESP.getBootVersion();
+    pong["cpuFreqMHz"] = ESP.getCpuFreqMHz();
+    pong["freeHeap"] = ESP.getFreeHeap();
+
+    pong.printTo(output);
+
+    return output;
+}
+
 //------------------------------------------------------------------------------
+
+void endpointPing() {
+    webServer.on("/ping",[] () {
+        webServer.send(200, "text/json", pingStatus());
+    });
+}
+
 void setup() {
     Serial.begin(9600);
     Wire.begin(SDAPIN, SCLPIN);
@@ -96,6 +128,8 @@ void setup() {
         delay(500);
     }
     timer.setInterval(5000L, process);
+    endpointPing();
+    webServer.begin();
 
     delay(5000);
 }
@@ -104,4 +138,5 @@ void loop() {
     aio.run();
     Blynk.run();
     timer.run();
+    webServer.handleClient();
 }
