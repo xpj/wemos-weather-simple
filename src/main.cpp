@@ -99,6 +99,54 @@ String pingStatus() {
 
 //------------------------------------------------------------------------------
 
+String wotJson() {
+    String output;
+    StaticJsonBuffer<200> jsonBuffer;
+
+    JsonArray& json = jsonBuffer.createArray();
+    JsonObject &root = json.createNestedObject();
+
+    root["name"] = "xpj.ninja/simple-weather-station";
+    root["type"] = "thing";
+    root["description"] = "xpj.ninja/simple-weather-station";
+
+    // properties
+    JsonObject& properties = root.createNestedObject("properties");
+
+    JsonObject &temperatureProperty = jsonBuffer.createObject();
+    temperatureProperty["type"] = "number";
+    temperatureProperty["unit"] = "celsius";
+    temperatureProperty["description"] = "Temperature Sensor";
+    temperatureProperty["href"] = "/properties/temperature";
+
+    properties["temperature"] = temperatureProperty;
+
+    // events
+
+
+    json.printTo(output);
+    return output;
+}
+
+void endpointWot() {
+    webServer.on("/things/esp", [] () {
+        webServer.send(200, "text/json", wotJson());
+    });
+}
+
+void endpointTemperature() {
+    webServer.on("/things/esp/properties/temperature", [] () {
+        units_t event280;
+        bme280TG->get(&event280);
+        char buff[10];
+        dtostrf(bme280TG->getTemperature(event280), 4, 6, buff);
+        String temp = "{\"temperature\":";
+        temp += buff;
+        temp += "}";
+        webServer.send(200, "text/json", temp);
+    });
+}
+
 void endpointPing() {
     webServer.on("/ping",[] () {
         webServer.send(200, "text/json", pingStatus());
@@ -129,6 +177,8 @@ void setup() {
     }
     timer.setInterval(5000L, process);
     endpointPing();
+    endpointTemperature();
+    endpointWot();
     webServer.begin();
 
     delay(5000);
