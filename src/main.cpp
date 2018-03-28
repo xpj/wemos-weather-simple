@@ -3,31 +3,66 @@
 #include <SPI.h>
 #include <ESP8266WiFi.h>
 #include <ESP8266WebServer.h>
-#include "AdafruitIO_WiFi.h"
-#include "BlynkSimpleEsp8266.h"
+#include <Ethernet.h>
+
 #include "SSD1306Ascii.h"
 #include "SSD1306AsciiWire.h"
 #include "BME280TG.h"
 #include "ArduinoJson.h"
 
-#include "secrets.h"
+#include "config.h"
+
+#define LOOP_INTERVAL 5000
 
 #define I2C_ADDRESS 0x3C
 #define SCLPIN  5
 #define SDAPIN  4
 
+ESP8266WebServer webServer(80);
+SSD1306AsciiWire oled;
+BME280TG *bme280TG;
+
+#ifdef SUPPORT_BLYNK
+
+#include "BlynkSimpleEsp8266.h"
+
+BlynkTimer timer;
+
+void toBlynk(units_t event280) {
+    Blynk.virtualWrite(V0, bme280TG->getTemperature(event280));
+    Blynk.virtualWrite(V1, bme280TG->getHumidity(event280));
+    Blynk.virtualWrite(V2, bme280TG->getPressure(event280));
+}
+#endif
+
+#ifdef SUPPORT_ADAFRUIT_IO
+
+#include "AdafruitIO_WiFi.h"
 #define AIO_GROUP "simple-weather-station"
 #define AIO_TEMP "temperature"
 #define AIO_HUMIDITY "humidity"
 #define AIO_PRESSURE "pressure"
 
-ESP8266WebServer webServer(80);
-SSD1306AsciiWire oled;
-BME280TG *bme280TG;
-BlynkTimer timer;
+
 AdafruitIO_WiFi aio(SECRET_AIO_USERNAME, SECRET_AIO_TOKEN, SECRET_WIFI_SSID, SECRET_WIFI_PASS);
 AdafruitIO_Group *group = aio.group(AIO_GROUP);
 
+void toAio(units_t event280) {
+    group->set(AIO_TEMP, bme280TG->getTemperature(event280));
+    group->set(AIO_HUMIDITY, bme280TG->getHumidity(event280));
+    group->set(AIO_PRESSURE, bme280TG->getPressure(event280));
+    group->save();
+}
+
+void setupAio() {
+    aio.connect();
+    while(aio.status() < AIO_CONNECTED) {
+        delay(500);
+    }
+}
+#endif
+
+void setupWifi();
 
 void toSerial(units_t event280) {
     Serial.println("---------------");
@@ -57,26 +92,18 @@ void toDisplay(units_t event280) {
 
 }
 
-void toBlynk(units_t event280) {
-    Blynk.virtualWrite(V0, bme280TG->getTemperature(event280));
-    Blynk.virtualWrite(V1, bme280TG->getHumidity(event280));
-    Blynk.virtualWrite(V2, bme280TG->getPressure(event280));
-}
-
-void toAio(units_t event280) {
-    group->set(AIO_TEMP, bme280TG->getTemperature(event280));
-    group->set(AIO_HUMIDITY, bme280TG->getHumidity(event280));
-    group->set(AIO_PRESSURE, bme280TG->getPressure(event280));
-    group->save();
-}
 
 void process() {
     units_t event280;
     bme280TG->get(&event280);
     toSerial(event280);
     toDisplay(event280);
+#ifdef SUPPORT_BLYNK
     toBlynk(event280);
+#endif
+#ifdef SUPPORT_ADAFRUIT_IO
     toAio(event280);
+#endif
 }
 
 String pingStatus() {
@@ -153,6 +180,20 @@ void endpointPing() {
     });
 }
 
+
+void setupWifi() {
+    WiFi.begin(SECRET_WIFI_SSID, SECRET_WIFI_PASS);
+
+    while (WiFi.status() != WL_CONNECTED) {
+        delay(500);
+    }
+
+    Serial.println("");
+    Serial.println("WiFi connected");
+    Serial.println("IP address: ");
+    Serial.println(WiFi.localIP());
+}
+
 void setup() {
     Serial.begin(9600);
     Wire.begin(SDAPIN, SCLPIN);
@@ -169,24 +210,36 @@ void setup() {
 
     bme280TG = new BME280TG();
 
-    Blynk.begin(SECRET_BLYNK_TOKEN, SECRET_WIFI_SSID, SECRET_WIFI_PASS);
+    setupWifi();
 
-    aio.connect();
-    while(aio.status() < AIO_CONNECTED) {
-        delay(500);
-    }
-    timer.setInterval(5000L, process);
+#ifdef SUPPORT_BLYNK
+    Blynk.config(SECRET_BLYNK_TOKEN);
+    timer.setInterval(LOOP_INTERVAL, process);
+#endif
+
+#ifdef SUPPORT_ADAFRUIT_IO
+    setupAio();
+#endif
+
     endpointPing();
     endpointTemperature();
     endpointWot();
+
     webServer.begin();
 
     delay(5000);
 }
 
 void loop() {
-    aio.run();
-    Blynk.run();
-    timer.run();
     webServer.handleClient();
+#ifdef SUPPORT_ADAFRUIT_IO
+    aio.run();
+#endif
+#ifdef SUPPORT_BLYNK
+    timer.run();
+    Blynk.run();
+#else
+    process();
+    delay(LOOP_INTERVAL);
+#endif
 }

@@ -1,0 +1,11 @@
+
+#ifndef WEMOSWEATHERSIMPLE_CONFIG_H
+#define WEMOSWEATHERSIMPLE_CONFIG_H
+
+#include "secrets.h"
+
+#define SUPPORT_ADAFRUIT_IO false
+
+#define SUPPORT_BLYNK false
+
+#endif //WEMOSWEATHERSIMPLE_CONFIG_H
