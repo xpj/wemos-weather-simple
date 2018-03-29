@@ -1,19 +1,33 @@
 # wemos-weather-simple [![Build Status](https://travis-ci.org/xpj/wemos-weather-simple.svg?branch=master)](https://travis-ci.org/xpj/wemos-weather-simple)
 Simple Weather Station
 
-
-
 ![sws.jpg](sws.jpg "Simple Weather Station")
-
 
 ## Configuration
 
 - in ``src`` folder copy ``secrets_template.h`` to ``secrets.h`` and fill your own
   - Blynk API Token
+  - AdafruitIO login
   - WiFi SSID and Password
+  - MQTT server, username and password
+- in ``src`` folder update ``config.h``
+  - comment/uncomment ``define``/``undefine`` to select integrations (Blynk, AdafruitIO) 
   
 - ``pio run``
 
+## MQTT
+
+Currently, topics published from SWS to Mosquitto MQTT server are stored in InfluxDB 
+and shown on Grafana dashboard. Thus the payload of the topic is in form of Influx Data Line:
+
+``key field=value``
+
+Integration between Mosquitto and InfluxDB is over Telegraf.
+
+Currently published topics are
+- ``sensors/sws1/temperature``
+- ``sensors/sws1/humidity``
+- ``sensors/sws1/pressure``
 
 ## Libraries
 
@@ -44,3 +58,6 @@ Simple Weather Station
 - ArduinoJson
   - pio id #64
   - (https://platformio.org/lib/show/64/ArduinoJson)  
+- PubSubClient
+  - pio #89
+  - (https://platformio.org/lib/show/89/PubSubClient)  

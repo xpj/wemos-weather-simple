@@ -8,4 +8,8 @@
 #define SECRET_AIO_USERNAME "username"
 #define SECRET_AIO_TOKEN "token"
 
+#define SECRET_MQTT_USERNAME "user"
+#define SECRET_MQTT_PASSWORD "pass"
+#define SECRET_MQTT_SERVER "server"
+
 #endif //WEMOSWEATHERSIMPLE_SECRETS_H

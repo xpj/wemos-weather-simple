@@ -4,8 +4,10 @@
 
 #include "secrets.h"
 
-#define SUPPORT_ADAFRUIT_IO false
+//#define SUPPORT_ADAFRUIT_IO
+#undef SUPPORT_ADAFRUIT_IO
 
-#define SUPPORT_BLYNK false
+//#define SUPPORT_BLYNK
+#undef SUPPORT_BLYNK
 
 #endif //WEMOSWEATHERSIMPLE_CONFIG_H

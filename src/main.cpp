@@ -5,6 +5,8 @@
 #include <ESP8266WebServer.h>
 #include <Ethernet.h>
 
+#include <PubSubClient.h>
+
 #include "SSD1306Ascii.h"
 #include "SSD1306AsciiWire.h"
 #include "BME280TG.h"
@@ -21,6 +23,8 @@
 ESP8266WebServer webServer(80);
 SSD1306AsciiWire oled;
 BME280TG *bme280TG;
+WiFiClient wifiClient;
+PubSubClient mqttClient(SECRET_MQTT_SERVER, 1883, wifiClient);
 
 #ifdef SUPPORT_BLYNK
 
@@ -92,12 +96,51 @@ void toDisplay(units_t event280) {
 
 }
 
+void mqttReconnect() {
+    if (!mqttClient.connected()) {
+        Serial.print("Attempting MQTT connection...");
+        if (mqttClient.connect("sws", SECRET_MQTT_USERNAME, SECRET_MQTT_PASSWORD)) {
+            Serial.println("connected");
+            mqttClient.publish("sensors/sws", "hello world");
+        } else {
+            Serial.print("failed, rc=");
+            Serial.print(mqttClient.state());
+        }
+    }
+}
+
+void mqttPublishFloat(String topic, String key, String field, float value) {
+    char val[10];
+    dtostrf(value, 3, 2, val);
+    String payload;
+    payload = key;
+    payload += " ";
+    payload += field;
+    payload += "=";
+    payload += val;
+    mqttClient.publish(topic.c_str(), (char*) payload.c_str());
+}
+
+void toMqtt(units_t event280) {
+    if (!mqttClient.connected()) {
+        mqttReconnect();
+    } else {
+        mqttClient.loop();
+
+        mqttPublishFloat("sensors/sws1/temperature", "sws", "temperature", bme280TG->getTemperature(event280));
+        mqttPublishFloat("sensors/sws1/humidity", "sws", "humidity", bme280TG->getHumidity(event280));
+        mqttPublishFloat("sensors/sws1/pressure", "sws", "pressure", bme280TG->getPressure(event280));
+    }
+}
 
 void process() {
     units_t event280;
     bme280TG->get(&event280);
+
     toSerial(event280);
     toDisplay(event280);
+    toMqtt(event280);
+
 #ifdef SUPPORT_BLYNK
     toBlynk(event280);
 #endif
