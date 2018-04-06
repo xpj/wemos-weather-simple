@@ -6,7 +6,7 @@
 #include <Ethernet.h>
 
 #include <PubSubClient.h>
-
+#include <utility>
 #include "SSD1306Ascii.h"
 #include "SSD1306AsciiWire.h"
 #include "BME280TG.h"
@@ -72,6 +72,8 @@ void toSerial(units_t event280) {
     Serial.println("---------------");
     Serial.print("IP address: ");
     Serial.println(WiFi.localIP());
+    Serial.print("MQTT Connected: ");
+    Serial.println(mqttClient.connected());
     Serial.println("---------------");
     Serial.print("Temperature: ");
     Serial.print(bme280TG->getTemperature(event280));
@@ -101,7 +103,6 @@ void mqttReconnect() {
         Serial.print("Attempting MQTT connection...");
         if (mqttClient.connect("sws", SECRET_MQTT_USERNAME, SECRET_MQTT_PASSWORD)) {
             Serial.println("connected");
-            mqttClient.publish("sensors/sws", "hello world");
         } else {
             Serial.print("failed, rc=");
             Serial.print(mqttClient.state());
@@ -109,16 +110,33 @@ void mqttReconnect() {
     }
 }
 
-void mqttPublishFloat(String topic, String key, String field, float value) {
+String createFieldFloat(String field, float value) {
     char val[10];
     dtostrf(value, 3, 2, val);
+    String fieldString = std::move(field);
+    fieldString += "=";
+    fieldString += val;
+    return fieldString;
+}
+
+String createBme280TopicPayload(String key, units_t event280) {
     String payload;
-    payload = key;
+    payload = std::move(key);
     payload += " ";
-    payload += field;
-    payload += "=";
-    payload += val;
+    payload += createFieldFloat("temperature", bme280TG->getTemperature(event280));
+    payload += ",";
+    payload += createFieldFloat("humidity", bme280TG->getHumidity(event280));
+    payload += ",";
+    payload += createFieldFloat("pressure", bme280TG->getPressure(event280));
+    return payload;
+}
+
+void mqttPublishTopic(const String &topic, String payload) {
     mqttClient.publish(topic.c_str(), (char*) payload.c_str());
+}
+
+void mqttPublishBme280(const String &topic, const String &key, units_t event280) {
+    mqttPublishTopic(topic, createBme280TopicPayload(key, event280));
 }
 
 void toMqtt(units_t event280) {
@@ -126,10 +144,7 @@ void toMqtt(units_t event280) {
         mqttReconnect();
     } else {
         mqttClient.loop();
-
-        mqttPublishFloat("sensors/sws1/temperature", "sws", "temperature", bme280TG->getTemperature(event280));
-        mqttPublishFloat("sensors/sws1/humidity", "sws", "humidity", bme280TG->getHumidity(event280));
-        mqttPublishFloat("sensors/sws1/pressure", "sws", "pressure", bme280TG->getPressure(event280));
+        mqttPublishBme280("sensors/sws1/bme280", "sws", event280);
     }
 }
 
@@ -239,6 +254,7 @@ void setupWifi() {
 
 void setup() {
     Serial.begin(9600);
+    Serial.setDebugOutput(true);
     Wire.begin(SDAPIN, SCLPIN);
     Wire.setClock(400000L);
 
