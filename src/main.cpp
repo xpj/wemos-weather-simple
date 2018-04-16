@@ -7,8 +7,7 @@
 
 #include <PubSubClient.h>
 #include <utility>
-#include "SSD1306Ascii.h"
-#include "SSD1306AsciiWire.h"
+#include <SSD1306init.h>
 #include "BME280TG.h"
 #include "ArduinoJson.h"
 
@@ -21,10 +20,29 @@
 #define SDAPIN  4
 
 ESP8266WebServer webServer(80);
-SSD1306AsciiWire oled;
 BME280TG *bme280TG;
 WiFiClient wifiClient;
 PubSubClient mqttClient(SECRET_MQTT_SERVER, 1883, wifiClient);
+
+#ifdef OLED
+
+#include "Oled.h"
+
+Oled *oled;
+
+void toOledDisplay(units_t event280) {
+    oled->prepare();
+    oled->println("Temperature");
+    oled->println(bme280TG->getTemperature(event280));
+    oled->println("Humidity");
+    oled->print(bme280TG->getHumidity(event280));
+    oled->println("%");
+    oled->println("Pressure");
+    oled->print(bme280TG->getPressure(event280));
+    oled->println(" hPa");
+}
+
+#endif
 
 #ifdef SUPPORT_BLYNK
 
@@ -86,18 +104,6 @@ void toSerial(units_t event280) {
     Serial.println(" %");
 }
 
-void toDisplay(units_t event280) {
-    oled.clear();
-    oled.setFont(System5x7);
-    oled.println("Temperature");
-    oled.println(bme280TG->getTemperature(event280));
-    oled.println("Humidity");
-    oled.print(bme280TG->getHumidity(event280)); oled.println("%");
-    oled.println("Pressure");
-    oled.print(bme280TG->getPressure(event280)); oled.println(" hPa");
-
-}
-
 void mqttReconnect() {
     if (!mqttClient.connected()) {
         Serial.print("Attempting MQTT connection...");
@@ -132,7 +138,7 @@ String createBme280TopicPayload(String key, units_t event280) {
 }
 
 void mqttPublishTopic(const String &topic, String payload) {
-    mqttClient.publish(topic.c_str(), (char*) payload.c_str());
+    mqttClient.publish(topic.c_str(), (char *) payload.c_str());
 }
 
 void mqttPublishBme280(const String &topic, const String &key, units_t event280) {
@@ -153,9 +159,10 @@ void process() {
     bme280TG->get(&event280);
 
     toSerial(event280);
-    toDisplay(event280);
     toMqtt(event280);
-
+#ifdef OLED
+    toOledDisplay(event280);
+#endif
 #ifdef SUPPORT_BLYNK
     toBlynk(event280);
 #endif
@@ -168,7 +175,7 @@ String pingStatus() {
     String output;
     StaticJsonBuffer<200> jsonBuffer;
 
-    JsonObject& pong = jsonBuffer.createObject();
+    JsonObject &pong = jsonBuffer.createObject();
 
     pong["chipId"] = ESP.getChipId();
     pong["sdkVersion"] = ESP.getSdkVersion();
@@ -188,7 +195,7 @@ String wotJson() {
     String output;
     StaticJsonBuffer<200> jsonBuffer;
 
-    JsonArray& json = jsonBuffer.createArray();
+    JsonArray &json = jsonBuffer.createArray();
     JsonObject &root = json.createNestedObject();
 
     root["name"] = "xpj.ninja/simple-weather-station";
@@ -196,7 +203,7 @@ String wotJson() {
     root["description"] = "xpj.ninja/simple-weather-station";
 
     // properties
-    JsonObject& properties = root.createNestedObject("properties");
+    JsonObject &properties = root.createNestedObject("properties");
 
     JsonObject &temperatureProperty = jsonBuffer.createObject();
     temperatureProperty["type"] = "number";
@@ -214,13 +221,13 @@ String wotJson() {
 }
 
 void endpointWot() {
-    webServer.on("/things/esp", [] () {
+    webServer.on("/things/esp", []() {
         webServer.send(200, "text/json", wotJson());
     });
 }
 
 void endpointTemperature() {
-    webServer.on("/things/esp/properties/temperature", [] () {
+    webServer.on("/things/esp/properties/temperature", []() {
         units_t event280;
         bme280TG->get(&event280);
         char buff[10];
@@ -233,7 +240,7 @@ void endpointTemperature() {
 }
 
 void endpointPing() {
-    webServer.on("/ping",[] () {
+    webServer.on("/ping", []() {
         webServer.send(200, "text/json", pingStatus());
     });
 }
@@ -258,16 +265,16 @@ void setup() {
     Wire.begin(SDAPIN, SCLPIN);
     Wire.setClock(400000L);
 
-    oled.begin(&MicroOLED64x48, I2C_ADDRESS);
-    oled.clear();
-    oled.setFont(System5x7);
-    oled.println("xpj.ninja");
-    oled.println();
-    oled.println("Simple");
-    oled.println("Weather");
-    oled.println("Station");
-
     bme280TG = new BME280TG();
+
+#ifdef OLED
+    oled = new Oled(&MicroOLED64x48, I2C_ADDRESS);
+    oled->println("xpj.ninja");
+    oled->println();
+    oled->println("Simple");
+    oled->println("Weather");
+    oled->println("Station");
+#endif
 
     setupWifi();
 
