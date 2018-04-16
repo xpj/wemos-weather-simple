@@ -11,6 +11,9 @@
 #include "BME280TG.h"
 #include "ArduinoJson.h"
 
+#include "SerialWeatherOutputDevice.h"
+#include "OledWeatherOutputDevice.h"
+
 #include "config.h"
 
 #define LOOP_INTERVAL 5000
@@ -20,29 +23,15 @@
 #define SDAPIN  4
 
 ESP8266WebServer webServer(80);
+
 BME280TG *bme280TG;
+
+SerialWeatherOutputDevice *serialWeatherDevice;
+OledWeatherOutputDevice *oledWeatherDevice;
+
 WiFiClient wifiClient;
 PubSubClient mqttClient(SECRET_MQTT_SERVER, 1883, wifiClient);
 
-#ifdef OLED
-
-#include "Oled.h"
-
-Oled *oled;
-
-void toOledDisplay(units_t event280) {
-    oled->prepare();
-    oled->println("Temperature");
-    oled->println(bme280TG->getTemperature(event280));
-    oled->println("Humidity");
-    oled->print(bme280TG->getHumidity(event280));
-    oled->println("%");
-    oled->println("Pressure");
-    oled->print(bme280TG->getPressure(event280));
-    oled->println(" hPa");
-}
-
-#endif
 
 #ifdef SUPPORT_BLYNK
 
@@ -85,24 +74,6 @@ void setupAio() {
 #endif
 
 void setupWifi();
-
-void toSerial(units_t event280) {
-    Serial.println("---------------");
-    Serial.print("IP address: ");
-    Serial.println(WiFi.localIP());
-    Serial.print("MQTT Connected: ");
-    Serial.println(mqttClient.connected());
-    Serial.println("---------------");
-    Serial.print("Temperature: ");
-    Serial.print(bme280TG->getTemperature(event280));
-    Serial.println(" C");
-    Serial.print("Pressure:    ");
-    Serial.print(bme280TG->getPressure(event280));
-    Serial.println(" hPa");
-    Serial.print("Humidity:    ");
-    Serial.print(bme280TG->getHumidity(event280));
-    Serial.println(" %");
-}
 
 void mqttReconnect() {
     if (!mqttClient.connected()) {
@@ -158,11 +129,10 @@ void process() {
     units_t event280;
     bme280TG->get(&event280);
 
-    toSerial(event280);
+    serialWeatherDevice->process(event280);
+    oledWeatherDevice->process(event280);
+
     toMqtt(event280);
-#ifdef OLED
-    toOledDisplay(event280);
-#endif
 #ifdef SUPPORT_BLYNK
     toBlynk(event280);
 #endif
@@ -260,21 +230,14 @@ void setupWifi() {
 }
 
 void setup() {
-    Serial.begin(9600);
-    Serial.setDebugOutput(true);
     Wire.begin(SDAPIN, SCLPIN);
     Wire.setClock(400000L);
 
     bme280TG = new BME280TG();
-
-#ifdef OLED
-    oled = new Oled(&MicroOLED64x48, I2C_ADDRESS);
-    oled->println("xpj.ninja");
-    oled->println();
-    oled->println("Simple");
-    oled->println("Weather");
-    oled->println("Station");
-#endif
+    serialWeatherDevice = new SerialWeatherOutputDevice(bme280TG);
+    serialWeatherDevice->hello();
+    oledWeatherDevice = new OledWeatherOutputDevice(bme280TG, I2C_ADDRESS);
+    oledWeatherDevice->hello();
 
     setupWifi();
 

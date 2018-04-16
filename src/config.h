@@ -10,7 +10,4 @@
 //#define SUPPORT_BLYNK
 #undef SUPPORT_BLYNK
 
-#define OLED
-//#undef OLED
-
 #endif //WEMOSWEATHERSIMPLE_CONFIG_H
