@@ -1,7 +1,6 @@
 #include <Wire.h>
 #include <Arduino.h>
 #include <SPI.h>
-#include <ESP8266WebServer.h>
 #include <Ethernet.h>
 
 #include <PubSubClient.h>
@@ -22,8 +21,6 @@
 #define I2C_ADDRESS 0x3C
 #define SCLPIN  5
 #define SDAPIN  4
-
-ESP8266WebServer webServer(80);
 
 BME280TG *bme280TG;
 
@@ -88,80 +85,6 @@ void process() {
 #endif
 }
 
-String pingStatus() {
-    String output;
-    StaticJsonBuffer<200> jsonBuffer;
-
-    JsonObject &pong = jsonBuffer.createObject();
-
-    pong["chipId"] = ESP.getChipId();
-    pong["sdkVersion"] = ESP.getSdkVersion();
-    pong["coreVersion"] = ESP.getCoreVersion();
-    pong["bootVersion"] = ESP.getBootVersion();
-    pong["cpuFreqMHz"] = ESP.getCpuFreqMHz();
-    pong["freeHeap"] = ESP.getFreeHeap();
-
-    pong.printTo(output);
-
-    return output;
-}
-
-//------------------------------------------------------------------------------
-
-String wotJson() {
-    String output;
-    StaticJsonBuffer<200> jsonBuffer;
-
-    JsonArray &json = jsonBuffer.createArray();
-    JsonObject &root = json.createNestedObject();
-
-    root["name"] = "xpj.ninja/simple-weather-station";
-    root["type"] = "thing";
-    root["description"] = "xpj.ninja/simple-weather-station";
-
-    // properties
-    JsonObject &properties = root.createNestedObject("properties");
-
-    JsonObject &temperatureProperty = jsonBuffer.createObject();
-    temperatureProperty["type"] = "number";
-    temperatureProperty["unit"] = "celsius";
-    temperatureProperty["description"] = "Temperature Sensor";
-    temperatureProperty["href"] = "/properties/temperature";
-
-    properties["temperature"] = temperatureProperty;
-
-    // events
-
-
-    json.printTo(output);
-    return output;
-}
-
-void endpointWot() {
-    webServer.on("/things/esp", []() {
-        webServer.send(200, "text/json", wotJson());
-    });
-}
-
-void endpointTemperature() {
-    webServer.on("/things/esp/properties/temperature", []() {
-        units_t event280;
-        bme280TG->get(&event280);
-        char buff[10];
-        dtostrf(bme280TG->getTemperature(event280), 4, 6, buff);
-        String temp = "{\"temperature\":";
-        temp += buff;
-        temp += "}";
-        webServer.send(200, "text/json", temp);
-    });
-}
-
-void endpointPing() {
-    webServer.on("/ping", []() {
-        webServer.send(200, "text/json", pingStatus());
-    });
-}
-
 void setup() {
     Wire.begin(SDAPIN, SCLPIN);
     Wire.setClock(400000L);
@@ -192,17 +115,10 @@ void setup() {
     setupAio();
 #endif
 
-    endpointPing();
-    endpointTemperature();
-    endpointWot();
-
-    webServer.begin();
-
     delay(5000);
 }
 
 void loop() {
-    webServer.handleClient();
 #ifdef SUPPORT_ADAFRUIT_IO
     aio.run();
 #endif
