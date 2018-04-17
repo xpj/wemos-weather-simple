@@ -1,7 +1,6 @@
 #include <Wire.h>
 #include <Arduino.h>
 #include <SPI.h>
-#include <ESP8266WiFi.h>
 #include <ESP8266WebServer.h>
 #include <Ethernet.h>
 
@@ -11,8 +10,10 @@
 #include "BME280TG.h"
 #include "ArduinoJson.h"
 
+#include "Wifi.h"
 #include "SerialWeatherOutputDevice.h"
 #include "OledWeatherOutputDevice.h"
+#include "MQTTWeatherOutputDevice.h"
 
 #include "config.h"
 
@@ -28,10 +29,8 @@ BME280TG *bme280TG;
 
 SerialWeatherOutputDevice *serialWeatherDevice;
 OledWeatherOutputDevice *oledWeatherDevice;
-
-WiFiClient wifiClient;
-PubSubClient mqttClient(SECRET_MQTT_SERVER, 1883, wifiClient);
-
+Wifi *wifi;
+MQTTWeatherOutputDevice *mqttWeatherOutputDevice;
 
 #ifdef SUPPORT_BLYNK
 
@@ -73,67 +72,15 @@ void setupAio() {
 }
 #endif
 
-void setupWifi();
-
-void mqttReconnect() {
-    if (!mqttClient.connected()) {
-        Serial.print("Attempting MQTT connection...");
-        if (mqttClient.connect("sws", SECRET_MQTT_USERNAME, SECRET_MQTT_PASSWORD)) {
-            Serial.println("connected");
-        } else {
-            Serial.print("failed, rc=");
-            Serial.print(mqttClient.state());
-        }
-    }
-}
-
-String createFieldFloat(String field, float value) {
-    char val[10];
-    dtostrf(value, 3, 2, val);
-    String fieldString = std::move(field);
-    fieldString += "=";
-    fieldString += val;
-    return fieldString;
-}
-
-String createBme280TopicPayload(String key, units_t event280) {
-    String payload;
-    payload = std::move(key);
-    payload += " ";
-    payload += createFieldFloat("temperature", bme280TG->getTemperature(event280));
-    payload += ",";
-    payload += createFieldFloat("humidity", bme280TG->getHumidity(event280));
-    payload += ",";
-    payload += createFieldFloat("pressure", bme280TG->getPressure(event280));
-    return payload;
-}
-
-void mqttPublishTopic(const String &topic, String payload) {
-    mqttClient.publish(topic.c_str(), (char *) payload.c_str());
-}
-
-void mqttPublishBme280(const String &topic, const String &key, units_t event280) {
-    mqttPublishTopic(topic, createBme280TopicPayload(key, event280));
-}
-
-void toMqtt(units_t event280) {
-    if (!mqttClient.connected()) {
-        mqttReconnect();
-    } else {
-        mqttClient.loop();
-        mqttPublishBme280("sensors/sws1/bme280", "sws", event280);
-    }
-}
-
 void process() {
     units_t event280;
     bme280TG->get(&event280);
 
     serialWeatherDevice->process(event280);
     oledWeatherDevice->process(event280);
+    mqttWeatherOutputDevice->process(event280);
 
-    toMqtt(event280);
-#ifdef SUPPORT_BLYNK
+    #ifdef SUPPORT_BLYNK
     toBlynk(event280);
 #endif
 #ifdef SUPPORT_ADAFRUIT_IO
@@ -215,20 +162,6 @@ void endpointPing() {
     });
 }
 
-
-void setupWifi() {
-    WiFi.begin(SECRET_WIFI_SSID, SECRET_WIFI_PASS);
-
-    while (WiFi.status() != WL_CONNECTED) {
-        delay(500);
-    }
-
-    Serial.println("");
-    Serial.println("WiFi connected");
-    Serial.println("IP address: ");
-    Serial.println(WiFi.localIP());
-}
-
 void setup() {
     Wire.begin(SDAPIN, SCLPIN);
     Wire.setClock(400000L);
@@ -239,7 +172,16 @@ void setup() {
     oledWeatherDevice = new OledWeatherOutputDevice(bme280TG, I2C_ADDRESS);
     oledWeatherDevice->hello();
 
-    setupWifi();
+    wifi = new Wifi(SECRET_WIFI_SSID, SECRET_WIFI_PASS);
+    mqttWeatherOutputDevice = new MQTTWeatherOutputDevice(
+            bme280TG,
+            SECRET_MQTT_SERVER,
+            1883,
+            SECRET_MQTT_USERNAME,
+            SECRET_MQTT_PASSWORD,
+            "sensors/sws1/bme280",
+            "sws",
+            wifi->getWiFiClient());
 
 #ifdef SUPPORT_BLYNK
     Blynk.config(SECRET_BLYNK_TOKEN);

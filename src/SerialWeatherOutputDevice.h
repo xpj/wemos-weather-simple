@@ -9,7 +9,7 @@ public:
         Serial.begin(9600);
     }
 
-    void process(units_t event280) override {
+    void process(const units_t &event280) override {
         Serial.print("Temperature: ");
         Serial.print(temperature(event280));
         Serial.println(" C");

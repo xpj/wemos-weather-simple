@@ -1,6 +1,5 @@
-#ifndef WEATHER_DEVICE_H
 #include "WeatherOutputDevice.h"
-#endif
+
 #include <SSD1306init.h>
 #include <SSD1306AsciiWire.h>
 
@@ -10,7 +9,7 @@ public:
         oled->begin(&MicroOLED64x48, i2cAddr);
     }
 
-    void process(units_t event280) override {
+    void process(const units_t &event280) override {
         oled->clear();
         oled->setFont(font);
         oled->println("Temperature");
