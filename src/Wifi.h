@@ -7,10 +7,14 @@ class Wifi {
 public:
     Wifi(const char* wifiSsid, const char* wifiPass) {
         WiFi.begin(wifiSsid, wifiPass);
+        while(!WiFi.isConnected()) {
+            Serial.println("Wifi wait for connect");
+            delay(500);
+        }
         status();
     }
 
-    WiFiClient getWiFiClient() {
+    WiFiClient& getWiFiClient() {
         return wiFiClient;
     }
 

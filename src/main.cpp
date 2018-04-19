@@ -3,7 +3,6 @@
 #include <SPI.h>
 #include <Ethernet.h>
 
-#include <PubSubClient.h>
 #include <utility>
 #include <SSD1306init.h>
 #include "BME280TG.h"
@@ -12,7 +11,6 @@
 #include "Wifi.h"
 #include "SerialWeatherOutputDevice.h"
 #include "OledWeatherOutputDevice.h"
-#include "MQTTWeatherOutputDevice.h"
 
 #include "config.h"
 
@@ -27,19 +25,17 @@ BME280TG *bme280TG;
 SerialWeatherOutputDevice *serialWeatherDevice;
 OledWeatherOutputDevice *oledWeatherDevice;
 Wifi *wifi;
+
+#ifdef SUPPORT_MQTT
+#include "MQTTWeatherOutputDevice.h"
+WiFiClient wiFiClient;
 MQTTWeatherOutputDevice *mqttWeatherOutputDevice;
+#endif
 
 #ifdef SUPPORT_BLYNK
+#include "BlynkWeatherOutputDevice.h"
 
-#include "BlynkSimpleEsp8266.h"
-
-BlynkTimer timer;
-
-void toBlynk(units_t event280) {
-    Blynk.virtualWrite(V0, bme280TG->getTemperature(event280));
-    Blynk.virtualWrite(V1, bme280TG->getHumidity(event280));
-    Blynk.virtualWrite(V2, bme280TG->getPressure(event280));
-}
+BlynkWeatherOutputDevice *blynkWeatherOutputDevice;
 #endif
 
 #ifdef SUPPORT_ADAFRUIT_IO
@@ -75,10 +71,12 @@ void process() {
 
     serialWeatherDevice->process(event280);
     oledWeatherDevice->process(event280);
+#ifdef SUPPORT_MQTT
     mqttWeatherOutputDevice->process(event280);
+#endif
 
-    #ifdef SUPPORT_BLYNK
-    toBlynk(event280);
+#ifdef SUPPORT_BLYNK
+    blynkWeatherOutputDevice->process(event280);
 #endif
 #ifdef SUPPORT_ADAFRUIT_IO
     toAio(event280);
@@ -86,6 +84,7 @@ void process() {
 }
 
 void setup() {
+    Serial.begin(9600);
     Wire.begin(SDAPIN, SCLPIN);
     Wire.setClock(400000L);
 
@@ -96,6 +95,7 @@ void setup() {
     oledWeatherDevice->hello();
 
     wifi = new Wifi(SECRET_WIFI_SSID, SECRET_WIFI_PASS);
+#ifdef SUPPORT_MQTT
     mqttWeatherOutputDevice = new MQTTWeatherOutputDevice(
             bme280TG,
             SECRET_MQTT_SERVER,
@@ -104,11 +104,11 @@ void setup() {
             SECRET_MQTT_PASSWORD,
             "sensors/sws1/bme280",
             "sws",
-            wifi->getWiFiClient());
+            wiFiClient);
+#endif
 
 #ifdef SUPPORT_BLYNK
-    Blynk.config(SECRET_BLYNK_TOKEN);
-    timer.setInterval(LOOP_INTERVAL, process);
+    blynkWeatherOutputDevice = new BlynkWeatherOutputDevice(bme280TG, SECRET_BLYNK_TOKEN);
 #endif
 
 #ifdef SUPPORT_ADAFRUIT_IO
@@ -122,11 +122,6 @@ void loop() {
 #ifdef SUPPORT_ADAFRUIT_IO
     aio.run();
 #endif
-#ifdef SUPPORT_BLYNK
-    timer.run();
-    Blynk.run();
-#else
     process();
     delay(LOOP_INTERVAL);
-#endif
 }
