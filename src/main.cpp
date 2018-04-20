@@ -10,7 +10,6 @@
 
 #include "Wifi.h"
 #include "SerialWeatherOutputDevice.h"
-#include "OledWeatherOutputDevice.h"
 
 #include "config.h"
 
@@ -23,9 +22,13 @@
 
 BME280TG *bme280TG;
 
-SerialWeatherOutputDevice *serialWeatherDevice;
-OledWeatherOutputDevice *oledWeatherDevice;
 Wifi *wifi;
+
+SerialWeatherOutputDevice *serialWeatherDevice;
+#ifdef SUPPORT_OLED
+#include "OledWeatherOutputDevice.h"
+OledWeatherOutputDevice *oledWeatherDevice;
+#endif
 
 #ifdef SUPPORT_MQTT
 #include "MQTTWeatherOutputDevice.h"
@@ -40,30 +43,9 @@ BlynkWeatherOutputDevice *blynkWeatherOutputDevice;
 #endif
 
 #ifdef SUPPORT_ADAFRUIT_IO
+#include "AdafruitIOWeatherOutputDevice.h"
 
-#include "AdafruitIO_WiFi.h"
-#define AIO_GROUP "simple-weather-station"
-#define AIO_TEMP "temperature"
-#define AIO_HUMIDITY "humidity"
-#define AIO_PRESSURE "pressure"
-
-
-AdafruitIO_WiFi aio(SECRET_AIO_USERNAME, SECRET_AIO_TOKEN, SECRET_WIFI_SSID, SECRET_WIFI_PASS);
-AdafruitIO_Group *group = aio.group(AIO_GROUP);
-
-void toAio(units_t event280) {
-    group->set(AIO_TEMP, bme280TG->getTemperature(event280));
-    group->set(AIO_HUMIDITY, bme280TG->getHumidity(event280));
-    group->set(AIO_PRESSURE, bme280TG->getPressure(event280));
-    group->save();
-}
-
-void setupAio() {
-    aio.connect();
-    while(aio.status() < AIO_CONNECTED) {
-        delay(500);
-    }
-}
+AdafruitIOWeatherOutputDevice *adafruitIOWeatherOutputDevice;
 #endif
 
 void process() {
@@ -71,17 +53,17 @@ void process() {
     bme280TG->get(&event280);
 
     serialWeatherDevice->process(event280);
+#ifdef SUPPORT_OLED
     oledWeatherDevice->process(event280);
+#endif
 #ifdef SUPPORT_MQTT
     mqttWeatherOutputDevice->process(event280);
 #endif
-
 #ifdef SUPPORT_BLYNK
     blynkWeatherOutputDevice->process(event280);
 #endif
 #ifdef SUPPORT_ADAFRUIT_IO
-    aio.run();
-    toAio(event280);
+    adafruitIOWeatherOutputDevice->process(event280);
 #endif
 }
 
@@ -93,8 +75,10 @@ void setup() {
     bme280TG = new BME280TG();
     serialWeatherDevice = new SerialWeatherOutputDevice(bme280TG);
     serialWeatherDevice->hello();
+#ifdef SUPPORT_OLED
     oledWeatherDevice = new OledWeatherOutputDevice(bme280TG, I2C_ADDRESS);
     oledWeatherDevice->hello();
+#endif
 
     wifi = new Wifi(SECRET_WIFI_SSID, SECRET_WIFI_PASS);
 #ifdef SUPPORT_MQTT
@@ -114,7 +98,7 @@ void setup() {
 #endif
 
 #ifdef SUPPORT_ADAFRUIT_IO
-    setupAio();
+    adafruitIOWeatherOutputDevice = new AdafruitIOWeatherOutputDevice(bme280TG, AIO_GROUP, SECRET_AIO_USERNAME, SECRET_AIO_TOKEN, SECRET_WIFI_SSID, SECRET_WIFI_PASS);
 #endif
 
 #ifdef DEEP_SLEEP

@@ -4,14 +4,17 @@
 
 #include "secrets.h"
 
-//#define SUPPORT_ADAFRUIT_IO
-#undef SUPPORT_ADAFRUIT_IO
-
-#define SUPPORT_BLYNK
-//#undef SUPPORT_BLYNK
+#define SUPPORT_OLED
+//#undef SUPPORT_OLED
 
 #define SUPPORT_MQTT
 //#undef SUPPORT_MQTT
+
+#define SUPPORT_ADAFRUIT_IO
+//#undef SUPPORT_ADAFRUIT_IO
+
+#define SUPPORT_BLYNK
+//#undef SUPPORT_BLYNK
 
 //#define DEEP_SLEEP
 #undef DEEP_SLEEP
