@@ -14,7 +14,8 @@
 
 #include "config.h"
 
-#define LOOP_INTERVAL 5000
+#define LOOP_INTERVAL_SECONDS 5
+#define DEEP_SLEEP_INTERVAL_SECONDS 60 // 60 seconds
 
 #define I2C_ADDRESS 0x3C
 #define SCLPIN  5
@@ -79,6 +80,7 @@ void process() {
     blynkWeatherOutputDevice->process(event280);
 #endif
 #ifdef SUPPORT_ADAFRUIT_IO
+    aio.run();
     toAio(event280);
 #endif
 }
@@ -115,13 +117,20 @@ void setup() {
     setupAio();
 #endif
 
-    delay(5000);
+#ifdef DEEP_SLEEP
+    pinMode(D0, WAKEUP_PULLUP);
+    Serial.println("Deep sleep mode");
+    delay(500);
+    process();
+    ESP.deepSleep(DEEP_SLEEP_INTERVAL_SECONDS * 1000000);
+#else
+    delay(LOOP_INTERVAL_SECONDS * 1000);
+#endif
 }
 
 void loop() {
-#ifdef SUPPORT_ADAFRUIT_IO
-    aio.run();
-#endif
+#ifndef DEEP_SLEEP
     process();
-    delay(LOOP_INTERVAL);
+    delay(LOOP_INTERVAL_SECONDS * 1000);
+#endif
 }

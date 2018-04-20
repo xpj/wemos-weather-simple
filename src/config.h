@@ -13,4 +13,7 @@
 #define SUPPORT_MQTT
 //#undef SUPPORT_MQTT
 
+//#define DEEP_SLEEP
+#undef DEEP_SLEEP
+
 #endif //WEMOSWEATHERSIMPLE_CONFIG_H
