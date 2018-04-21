@@ -4,6 +4,9 @@
 
 #include "secrets.h"
 
+#define MQTT_TOPIC "sensors/sws1/bme280"
+#define MQTT_KEY "sws"
+
 #define SUPPORT_OLED
 //#undef SUPPORT_OLED
 

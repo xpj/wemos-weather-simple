@@ -32,7 +32,6 @@ OledWeatherOutputDevice *oledWeatherDevice;
 
 #ifdef SUPPORT_MQTT
 #include "MQTTWeatherOutputDevice.h"
-WiFiClient wiFiClient;
 MQTTWeatherOutputDevice *mqttWeatherOutputDevice;
 #endif
 
@@ -72,6 +71,7 @@ void setup() {
     Wire.begin(SDAPIN, SCLPIN);
     Wire.setClock(400000L);
 
+    wifi = new Wifi(SECRET_WIFI_SSID, SECRET_WIFI_PASS);
     bme280TG = new BME280TG();
     serialWeatherDevice = new SerialWeatherOutputDevice(bme280TG);
     serialWeatherDevice->hello();
@@ -80,7 +80,6 @@ void setup() {
     oledWeatherDevice->hello();
 #endif
 
-    wifi = new Wifi(SECRET_WIFI_SSID, SECRET_WIFI_PASS);
 #ifdef SUPPORT_MQTT
     mqttWeatherOutputDevice = new MQTTWeatherOutputDevice(
             bme280TG,
@@ -88,9 +87,8 @@ void setup() {
             1883,
             SECRET_MQTT_USERNAME,
             SECRET_MQTT_PASSWORD,
-            "sensors/sws1/bme280",
-            "sws",
-            wiFiClient);
+            MQTT_TOPIC,
+            MQTT_KEY);
 #endif
 
 #ifdef SUPPORT_BLYNK

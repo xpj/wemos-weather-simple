@@ -13,8 +13,7 @@ public:
             const char *mqttUser_m,
             const char *mqttPass_m,
             const char *topic_m,
-            const char *key_m,
-            WiFiClient& wiFiClient) : WeatherOutputDevice(bme280) {
+            const char *key_m) : WeatherOutputDevice(bme280) {
         mqttServer = mqttServer_m;
         mqttPort = mqttPort_m;
         mqttUser = mqttUser_m;
@@ -22,7 +21,8 @@ public:
         topic = topic_m;
         key = key_m;
 
-        mqttClient = new PubSubClient(mqttServer, mqttPort, wiFiClient);
+        wifiClient = new WiFiClient;
+        mqttClient = new PubSubClient(mqttServer, mqttPort, *wifiClient);
     }
 
     void process(units_t &event280) override {
@@ -40,6 +40,7 @@ private:
     const char *mqttPass;
     const char *topic;
     const char *key;
+    WiFiClient *wifiClient;
     PubSubClient *mqttClient;
 
     long lastReconnectAttempt = 0;
