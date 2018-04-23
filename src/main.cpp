@@ -5,22 +5,17 @@
 
 #include <utility>
 #include <SSD1306init.h>
-#include "BME280TG.h"
-#include "ArduinoJson.h"
-
-#include "Wifi.h"
-#include "SerialWeatherOutputDevice.h"
 
 #include "config.h"
 
-#define LOOP_INTERVAL_SECONDS 5
-#define DEEP_SLEEP_INTERVAL_SECONDS 60 // 60 seconds
+#include "ArduinoJson.h"
+#include "Wifi.h"
 
-#define I2C_ADDRESS 0x3C
-#define SCLPIN  5
-#define SDAPIN  4
+#include "SerialWeatherOutputDevice.h"
+#include "MQ135Device.h"
 
-BME280TG *bme280TG;
+BME280Device *bme280Device;
+MQ135Device *mq135Device;
 
 Wifi *wifi;
 
@@ -31,8 +26,10 @@ OledWeatherOutputDevice *oledWeatherDevice;
 #endif
 
 #ifdef SUPPORT_MQTT
+#include "MQTTDevice.h"
 #include "MQTTWeatherOutputDevice.h"
-MQTTWeatherOutputDevice *mqttWeatherOutputDevice;
+MQTTDevice *mqttDevice;
+MQTTWeatherOutputDevice *mqttWeatherDevice;
 #endif
 
 #ifdef SUPPORT_BLYNK
@@ -41,62 +38,59 @@ MQTTWeatherOutputDevice *mqttWeatherOutputDevice;
 BlynkWeatherOutputDevice *blynkWeatherOutputDevice;
 #endif
 
-#ifdef SUPPORT_ADAFRUIT_IO
-#include "AdafruitIOWeatherOutputDevice.h"
-
-AdafruitIOWeatherOutputDevice *adafruitIOWeatherOutputDevice;
-#endif
-
 void process() {
-    units_t event280;
-    bme280TG->get(&event280);
+    BME280Device::units_t eventBme280;
+    bme280Device->get(&eventBme280);
 
-    serialWeatherDevice->process(event280);
+    MQ135Device::mq_t eventMq135;
+    mq135Device->get(&eventMq135);
+
+    serialWeatherDevice->processBME280(eventBme280);
+    serialWeatherDevice->processMQ135(eventMq135);
 #ifdef SUPPORT_OLED
-    oledWeatherDevice->process(event280);
+    oledWeatherDevice->processBME280(eventBme280);
+    delay(5 * 1000);
+    oledWeatherDevice->processMQ135(eventMq135);
 #endif
 #ifdef SUPPORT_MQTT
-    mqttWeatherOutputDevice->process(event280);
+    mqttWeatherDevice->processBME280(eventBme280);
+    mqttWeatherDevice->processMQ135(eventMq135);
 #endif
 #ifdef SUPPORT_BLYNK
-    blynkWeatherOutputDevice->process(event280);
-#endif
-#ifdef SUPPORT_ADAFRUIT_IO
-    adafruitIOWeatherOutputDevice->process(event280);
+    blynkWeatherOutputDevice->processBME280(eventBme280);
+    blynkWeatherOutputDevice->processMQ135(eventMq135);
 #endif
 }
 
 void setup() {
     Serial.begin(9600);
-    Wire.begin(SDAPIN, SCLPIN);
+    Wire.begin(I2C_SDA_PIN, I2C_SCL_PIN);
     Wire.setClock(400000L);
 
     wifi = new Wifi(SECRET_WIFI_SSID, SECRET_WIFI_PASS);
-    bme280TG = new BME280TG();
-    serialWeatherDevice = new SerialWeatherOutputDevice(bme280TG);
+    bme280Device = new BME280Device();
+    mq135Device = new MQ135Device(MQ135_PIN);
+    serialWeatherDevice = new SerialWeatherOutputDevice(bme280Device, mq135Device);
     serialWeatherDevice->hello();
 #ifdef SUPPORT_OLED
-    oledWeatherDevice = new OledWeatherOutputDevice(bme280TG, I2C_ADDRESS);
+    oledWeatherDevice = new OledWeatherOutputDevice(bme280Device, mq135Device, OLED_I2C_ADDRESS);
     oledWeatherDevice->hello();
 #endif
 
 #ifdef SUPPORT_MQTT
-    mqttWeatherOutputDevice = new MQTTWeatherOutputDevice(
-            bme280TG,
+    mqttDevice = new MQTTDevice(
             SECRET_MQTT_SERVER,
             1883,
             SECRET_MQTT_USERNAME,
-            SECRET_MQTT_PASSWORD,
-            MQTT_TOPIC,
-            MQTT_KEY);
+            SECRET_MQTT_PASSWORD);
+
+    mqttWeatherDevice = new MQTTWeatherOutputDevice(bme280Device, mq135Device, mqttDevice);
+    mqttWeatherDevice->configureBME280(MQTT_BME280_TOPIC, MQTT_KEY);
+    mqttWeatherDevice->configureMQ135(MQTT_MQ135_TOPIC, MQTT_KEY);
 #endif
 
 #ifdef SUPPORT_BLYNK
-    blynkWeatherOutputDevice = new BlynkWeatherOutputDevice(bme280TG, SECRET_BLYNK_TOKEN);
-#endif
-
-#ifdef SUPPORT_ADAFRUIT_IO
-    adafruitIOWeatherOutputDevice = new AdafruitIOWeatherOutputDevice(bme280TG, AIO_GROUP, SECRET_AIO_USERNAME, SECRET_AIO_TOKEN, SECRET_WIFI_SSID, SECRET_WIFI_PASS);
+    blynkWeatherOutputDevice = new BlynkWeatherOutputDevice(bme280Device, mq135Device, SECRET_BLYNK_TOKEN);
 #endif
 
 #ifdef DEEP_SLEEP

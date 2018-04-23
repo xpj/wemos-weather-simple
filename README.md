@@ -46,9 +46,6 @@ Currently published topics are
 - Blynk
   - pio id #415
   - (https://platformio.org/lib/show/415/Blynk)
-- Adafruit IO Arduino
-  - pio id #714
-  - (https://platformio.org/lib/show/714/Adafruit%20IO%20Arduino)
 - Adafruit MQTT Library
   - pio id #1092
   - (https://platformio.org/lib/show/1092/Adafruit%20MQTT%20Library)  
@@ -61,3 +58,6 @@ Currently published topics are
 - PubSubClient
   - pio #89
   - (https://platformio.org/lib/show/89/PubSubClient)  
+ - TroykaMQ (MQ135 support)
+  - pio #2537
+  - https://platformio.org/lib/show/2537/TroykaMQ

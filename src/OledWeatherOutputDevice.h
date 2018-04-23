@@ -5,21 +5,34 @@
 
 class OledWeatherOutputDevice: public WeatherOutputDevice {
 public:
-    OledWeatherOutputDevice(BME280TG *bme280, uint8_t i2cAddr) : WeatherOutputDevice(bme280) {
+    OledWeatherOutputDevice(BME280Device *bme280, MQ135Device *mq135, uint8_t i2cAddr) : WeatherOutputDevice(bme280, mq135) {
         oled->begin(&MicroOLED64x48, i2cAddr);
     }
 
-    void process(units_t &event280) override {
+    void processBME280(BME280Device::units_t &event) override {
         oled->clear();
-        oled->setFont(font);
-        oled->println("Temperature");
-        oled->println(temperature(event280));
-        oled->println("Humidity");
-        oled->print(humidity(event280));
-        oled->println("%");
-        oled->println("Pressure");
-        oled->print(pressure(event280));
+        oled->println("Temperature: ");
+        oled->print(temperature(event));
+        oled->println(" C");
+        oled->println("Pressure:    ");
+        oled->print(pressure(event));
         oled->println(" hPa");
+        oled->println("Humidity:    ");
+        oled->print(humidity(event));
+        oled->println(" %");
+    }
+
+    void processMQ135(MQ135Device::mq_t &mq135) override {
+        oled->clear();
+        oled->println("CO2: ");
+        oled->print(co2(mq135));
+        oled->println(" ppm");
+        oled->println("R0:    ");
+        oled->print(rzero(mq135));
+        oled->println("");
+        oled->println("Ratio:    ");
+        oled->print(ratio(mq135));
+        oled->println(" %");
     }
 
     void hello() override {
