@@ -7,15 +7,6 @@ class Wifi {
 public:
     Wifi(const char* wifiSsid, const char* wifiPass) {
         WiFi.begin(wifiSsid, wifiPass);
-        while(!WiFi.isConnected()) {
-            Serial.println("Wifi wait for connect");
-            delay(500);
-        }
-        status();
-    }
-
-    WiFiClient& getWiFiClient() {
-        return wiFiClient;
     }
 
     bool reconnect() {
@@ -31,9 +22,6 @@ public:
         Serial.println("IP address: ");
         Serial.println(WiFi.localIP());
     }
-
-private:
-    WiFiClient wiFiClient;
 };
 
 #endif //WIFI_H

@@ -13,11 +13,14 @@
 
 #include "SerialWeatherOutputDevice.h"
 #include "MQ135Device.h"
+#include "OutputDevices.h"
 
 BME280Device *bme280Device;
 MQ135Device *mq135Device;
 
 Wifi *wifi;
+
+OutputDevices *outputDevices;
 
 SerialWeatherOutputDevice *serialWeatherDevice;
 #ifdef SUPPORT_OLED
@@ -39,27 +42,16 @@ BlynkWeatherOutputDevice *blynkWeatherOutputDevice;
 #endif
 
 void process() {
+    wifi->reconnect();
+
     BME280Device::units_t eventBme280;
     bme280Device->get(&eventBme280);
 
     MQ135Device::mq_t eventMq135;
     mq135Device->get(&eventMq135);
 
-    serialWeatherDevice->processBME280(eventBme280);
-    serialWeatherDevice->processMQ135(eventMq135);
-#ifdef SUPPORT_OLED
-    oledWeatherDevice->processBME280(eventBme280);
-    delay(5 * 1000);
-    oledWeatherDevice->processMQ135(eventMq135);
-#endif
-#ifdef SUPPORT_MQTT
-    mqttWeatherDevice->processBME280(eventBme280);
-    mqttWeatherDevice->processMQ135(eventMq135);
-#endif
-#ifdef SUPPORT_BLYNK
-    blynkWeatherOutputDevice->processBME280(eventBme280);
-    blynkWeatherOutputDevice->processMQ135(eventMq135);
-#endif
+    outputDevices->processMQ135(eventMq135);
+    outputDevices->processBME280(eventBme280);
 }
 
 void setup() {
@@ -68,13 +60,17 @@ void setup() {
     Wire.setClock(400000L);
 
     wifi = new Wifi(SECRET_WIFI_SSID, SECRET_WIFI_PASS);
+
     bme280Device = new BME280Device();
     mq135Device = new MQ135Device(MQ135_PIN);
+
+    outputDevices = new OutputDevices;
+
     serialWeatherDevice = new SerialWeatherOutputDevice(bme280Device, mq135Device);
-    serialWeatherDevice->hello();
+    outputDevices->add(serialWeatherDevice);
 #ifdef SUPPORT_OLED
     oledWeatherDevice = new OledWeatherOutputDevice(bme280Device, mq135Device, OLED_I2C_ADDRESS);
-    oledWeatherDevice->hello();
+    outputDevices->add(oledWeatherDevice);
 #endif
 
 #ifdef SUPPORT_MQTT
@@ -87,11 +83,15 @@ void setup() {
     mqttWeatherDevice = new MQTTWeatherOutputDevice(bme280Device, mq135Device, mqttDevice);
     mqttWeatherDevice->configureBME280(MQTT_BME280_TOPIC, MQTT_KEY);
     mqttWeatherDevice->configureMQ135(MQTT_MQ135_TOPIC, MQTT_KEY);
+    outputDevices->add(mqttWeatherDevice);
 #endif
 
 #ifdef SUPPORT_BLYNK
     blynkWeatherOutputDevice = new BlynkWeatherOutputDevice(bme280Device, mq135Device, SECRET_BLYNK_TOKEN);
+    outputDevices->add(blynkWeatherOutputDevice);
 #endif
+
+    outputDevices->hello();
 
 #ifdef DEEP_SLEEP
     pinMode(D0, WAKEUP_PULLUP);
