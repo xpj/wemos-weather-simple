@@ -11,9 +11,9 @@
 #include "ArduinoJson.h"
 #include "Wifi.h"
 
-#include "SerialWeatherOutputDevice.h"
-#include "MQ135Device.h"
-#include "OutputDevices.h"
+#include "device/SerialWeatherOutputDevice.h"
+#include "device/MQ135Device.h"
+#include "device/OutputDevices.h"
 
 BME280Device *bme280Device;
 MQ135Device *mq135Device;
@@ -24,20 +24,19 @@ OutputDevices *outputDevices;
 
 SerialWeatherOutputDevice *serialWeatherDevice;
 #ifdef SUPPORT_OLED
-#include "OledWeatherOutputDevice.h"
+#include "device/OledWeatherOutputDevice.h"
 OledWeatherOutputDevice *oledWeatherDevice;
 #endif
 
 #ifdef SUPPORT_MQTT
-#include "MQTTDevice.h"
-#include "MQTTWeatherOutputDevice.h"
+#include "device/MQTTDevice.h"
+#include "device/MQTTWeatherOutputDevice.h"
 MQTTDevice *mqttDevice;
 MQTTWeatherOutputDevice *mqttWeatherDevice;
 #endif
 
 #ifdef SUPPORT_BLYNK
-#include "BlynkWeatherOutputDevice.h"
-
+#include "device/BlynkWeatherOutputDevice.h"
 BlynkWeatherOutputDevice *blynkWeatherOutputDevice;
 #endif
 
