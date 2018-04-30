@@ -13,10 +13,12 @@ public:
         oled->clear();
         oled->println("Temperature: ");
         oled->print(temperature(event));
-        oled->println(" C");
+        oled->print(" ");
+        oled->println(temperatureUnit(event));
         oled->println("Pressure:    ");
         oled->print(pressure(event));
-        oled->println(" hPa");
+        oled->print(" ");
+        oled->println(pressureUnit(event));
         oled->println("Humidity:    ");
         oled->print(humidity(event));
         oled->println(" %");

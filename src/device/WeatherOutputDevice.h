@@ -25,6 +25,9 @@ protected:
     float pressure(BME280Device::units_t &event280) { return bme280Device->getPressure(event280);};
     float humidity(BME280Device::units_t &event280) { return bme280Device->getHumidity(event280);};
 
+    const char* temperatureUnit(BME280Device::units_t &event280) {  return bme280Device->getTemperatureUnitName(event280.temperatureUnit); }
+    const char* pressureUnit(BME280Device::units_t &event280) {  return bme280Device->getPressureUnitName(event280.pressureUnit); }
+
     float rzero(MQ135Device::mq_t &mq135) { return mq135Device->getRZero(mq135);};
     float ratio(MQ135Device::mq_t &mq135) { return mq135Device->getRatio(mq135);};
     float co2(MQ135Device::mq_t &mq135) { return mq135Device->getCo2(mq135);};
