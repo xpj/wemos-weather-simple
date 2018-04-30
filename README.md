@@ -63,6 +63,9 @@ Currently published topics are
 - PubSubClient
   - pio #89
   - (https://platformio.org/lib/show/89/PubSubClient)  
- - TroykaMQ (MQ135 support)
+- TroykaMQ (MQ135 support)
   - pio #2537
   - https://platformio.org/lib/show/2537/TroykaMQ
+- Adafruit INA219
+  - pio #160
+  - https://platformio.org/lib/show/160/Adafruit-INA219
