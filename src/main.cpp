@@ -12,14 +12,12 @@
 #include "Wifi.h"
 
 #include "device/I2CScanner.h"
-#include "device/INA219Device.h"
 #include "device/SerialWeatherOutputDevice.h"
 #include "device/MQ135Device.h"
 #include "device/OutputDevices.h"
 
 BME280Device *bme280Device;
 MQ135Device *mq135Device;
-INA219Device *ina219Device;
 
 I2CScanner *i2cScanner;
 Wifi *wifi;
@@ -27,26 +25,26 @@ Wifi *wifi;
 OutputDevices *outputDevices;
 
 SerialWeatherOutputDevice *serialWeatherDevice;
+
 #ifdef SUPPORT_OLED
-
 #include "device/OledWeatherOutputDevice.h"
-
 OledWeatherOutputDevice *oledWeatherDevice;
 #endif
 
-#ifdef SUPPORT_MQTT
+#ifdef SUPPORT_EPAPER
+#include "device/EPaperWeatherOutputDevice.h"
+EPaperWeatherOutputDevice *epaperWeatherDevice;
+#endif
 
+#ifdef SUPPORT_MQTT
 #include "device/MQTTDevice.h"
 #include "device/MQTTWeatherOutputDevice.h"
-
 MQTTDevice *mqttDevice;
 MQTTWeatherOutputDevice *mqttWeatherDevice;
 #endif
 
 #ifdef SUPPORT_BLYNK
-
 #include "device/BlynkWeatherOutputDevice.h"
-
 BlynkWeatherOutputDevice *blynkWeatherOutputDevice;
 #endif
 
@@ -79,6 +77,12 @@ void setupOled() {
 #endif
 }
 
+void setupEpaper() {
+#ifdef SUPPORT_EPAPER
+    epaperWeatherDevice = new EPaperWeatherOutputDevice(bme280Device, mq135Device);
+    outputDevices->add(epaperWeatherDevice);
+#endif
+}
 
 void process() {
     wifi->reconnect();
@@ -92,10 +96,6 @@ void process() {
 
     outputDevices->processMQ135(eventMq135);
     outputDevices->processBME280(eventBme280);
-
-    INA219Device::ina219_t eventIna219;
-    ina219Device->get(&eventIna219);
-    ina219Device->print(&eventIna219);
 }
 
 void __unused setup() {
@@ -111,8 +111,6 @@ void __unused setup() {
     bme280Device = new BME280Device();
     mq135Device = new MQ135Device(MQ135_PIN);
 
-    ina219Device = new INA219Device();
-
     outputDevices = new OutputDevices;
 
     serialWeatherDevice = new SerialWeatherOutputDevice(bme280Device, mq135Device);
@@ -121,6 +119,7 @@ void __unused setup() {
     setupOled();
     setupMQTT();
     setupBlynk();
+    setupEpaper();
     outputDevices->hello();
 
 #ifdef DEEP_SLEEP
