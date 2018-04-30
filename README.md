@@ -15,6 +15,11 @@ Simple Weather Station
   
 - ``pio run``
 
+## I2C Devices
+* 0x3C - SSD1305 monochrome OLED
+* 0x40 - INA219 DC Current Sensor
+* 0x76 - BME280 Temp/Barometric/Humidity
+
 ## MQTT
 
 Currently, topics published from SWS to Mosquitto MQTT server are stored in InfluxDB 

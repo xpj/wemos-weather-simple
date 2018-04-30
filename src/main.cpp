@@ -11,6 +11,7 @@
 #include "ArduinoJson.h"
 #include "Wifi.h"
 
+#include "device/I2CScanner.h"
 #include "device/SerialWeatherOutputDevice.h"
 #include "device/MQ135Device.h"
 #include "device/OutputDevices.h"
@@ -18,6 +19,7 @@
 BME280Device *bme280Device;
 MQ135Device *mq135Device;
 
+I2CScanner *i2cScanner;
 Wifi *wifi;
 
 OutputDevices *outputDevices;
@@ -78,6 +80,7 @@ void setupOled() {
 
 void process() {
     wifi->reconnect();
+    i2cScanner->printDevices();
 
     BME280Device::units_t eventBme280;
     bme280Device->get(&eventBme280);
@@ -91,6 +94,9 @@ void process() {
 
 void __unused setup() {
     Serial.begin(9600);
+
+    i2cScanner = new I2CScanner(I2C_SDA_PIN, I2C_SCL_PIN);
+
     Wire.begin(I2C_SDA_PIN, I2C_SCL_PIN);
     Wire.setClock(400000L);
 
