@@ -31,23 +31,25 @@ public:
         display.init(115200);
     }
 
-    void processBME280(BME280Device::units_t &event) override  {
+    void process(Weather weatherEvent) override  {
         display.setRotation(1);
         display.fillScreen(GxEPD_WHITE);
         display.setTextColor(GxEPD_BLACK);
         display.setFont(&FreeMonoBold9pt7b);
         display.setCursor(0, 0);
         display.println();
-        display.print("Temperature : ");
-        display.print(temperature(event)); display.println(temperatureUnit(event));
-        display.print("Humidity    : ");
-        display.print(humidity(event)); display.println("%");
-        display.print("Pressure    :");
-        display.print(pressure(event)); display.println(pressureUnit(event));
+        if (weatherEvent.bme280Connected) {
+            display.print("Temperature : ");
+            display.print(temperature(weatherEvent)); display.println(temperatureUnit(weatherEvent));
+            display.print("Humidity    : ");
+            display.print(humidity(weatherEvent)); display.println("%");
+            display.print("Pressure    :");
+            display.print(pressure(weatherEvent)); display.println(pressureUnit(weatherEvent));
+        } else {
+            display.println("No devices connected :-/");
+        }
         display.update();
     }
-
-    void processMQ135(MQ135Device::mq_t &mq135) override {}
 
     void hello() override {
         display.setRotation(1);

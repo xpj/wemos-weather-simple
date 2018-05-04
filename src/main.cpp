@@ -12,9 +12,9 @@
 #include "Wifi.h"
 
 #include "device/I2CScanner.h"
-#include "device/SerialWeatherOutputDevice.h"
-#include "device/MQ135Device.h"
-#include "device/OutputDevices.h"
+#include "device/output/SerialWeatherOutputDevice.h"
+#include "device/sensor/MQ135Device.h"
+#include "device/output/OutputDevices.h"
 
 BME280Device *bme280Device;
 MQ135Device *mq135Device;
@@ -27,7 +27,7 @@ OutputDevices *outputDevices;
 SerialWeatherOutputDevice *serialWeatherDevice;
 
 #ifdef SUPPORT_OLED
-#include "device/OledWeatherOutputDevice.h"
+#include "device/output/OledWeatherOutputDevice.h"
 OledWeatherOutputDevice *oledWeatherDevice;
 #endif
 
@@ -37,14 +37,14 @@ EPaperWeatherOutputDevice *epaperWeatherDevice;
 #endif
 
 #ifdef SUPPORT_MQTT
-#include "device/MQTTDevice.h"
-#include "device/MQTTWeatherOutputDevice.h"
+#include "device/output/MQTTDevice.h"
+#include "device/output/MQTTWeatherOutputDevice.h"
 MQTTDevice *mqttDevice;
 MQTTWeatherOutputDevice *mqttWeatherDevice;
 #endif
 
 #ifdef SUPPORT_BLYNK
-#include "device/BlynkWeatherOutputDevice.h"
+#include "device/output/BlynkWeatherOutputDevice.h"
 BlynkWeatherOutputDevice *blynkWeatherOutputDevice;
 #endif
 
@@ -88,14 +88,11 @@ void process() {
     wifi->reconnect();
     i2cScanner->printDevices();
 
-    BME280Device::units_t eventBme280;
-    bme280Device->get(&eventBme280);
+    Weather weatherEvent;
+    bme280Device->update(weatherEvent);
+    mq135Device->update(weatherEvent);
 
-    MQ135Device::mq_t eventMq135;
-    mq135Device->get(&eventMq135);
-
-    outputDevices->processMQ135(eventMq135);
-    outputDevices->processBME280(eventBme280);
+    outputDevices->process(weatherEvent);
 }
 
 void __unused setup() {

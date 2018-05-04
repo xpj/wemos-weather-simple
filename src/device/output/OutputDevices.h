@@ -17,14 +17,10 @@ public:
             (*devices_it)->hello();
         }
     }
-    void processBME280(BME280Device::units_t &event) {
+
+    void process(Weather weatherEvent) {
         for (devices_it = devices.begin(); devices_it!=devices.end(); devices_it++) {
-            (*devices_it)->processBME280(event);
-        }
-    }
-    void processMQ135(MQ135Device::mq_t &event) {
-        for (devices_it = devices.begin(); devices_it!=devices.end(); devices_it++) {
-            (*devices_it)->processMQ135(event);
+            (*devices_it)->process(weatherEvent);
         }
     }
 

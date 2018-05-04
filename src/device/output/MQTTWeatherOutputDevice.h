@@ -20,19 +20,18 @@ public:
         mq135_topic = topic;
     }
 
-    void processBME280(BME280Device::units_t &event) override {
+    void process(Weather weatherEvent) override {
         if (mqtt->isMqttConnected()) {
             mqtt->loop();
-            mqtt->mqttPublishTopic(bme280_topic, createBme280TopicPayload(bme280_key, event).c_str());
+            if (weatherEvent.bme280Connected) {
+                mqtt->mqttPublishTopic(bme280_topic, createBme280TopicPayload(bme280_key, weatherEvent).c_str());
+            }
+            if (weatherEvent.mq135Connected) {
+                mqtt->mqttPublishTopic(mq135_topic, createMq135TopicPayload(mq135_key, weatherEvent).c_str());
+            }
         }
     }
 
-    void processMQ135(MQ135Device::mq_t &mq135) override {
-        if (mqtt->isMqttConnected()) {
-            mqtt->loop();
-            mqtt->mqttPublishTopic(mq135_topic, createMq135TopicPayload(mq135_key, mq135).c_str());
-        }
-    }
 private:
     MQTTDevice *mqtt;
     const char *bme280_topic;
@@ -40,25 +39,25 @@ private:
     const char *mq135_topic;
     const char *mq135_key;
 
-    std::string createMq135TopicPayload(const char *key, MQ135Device::mq_t &mq135) {
+    std::string createMq135TopicPayload(const char *key, Weather weatherEvent) {
         std::string payload(key);
         payload += " ";
-        payload += mqtt->createFieldFloat("r0", rzero(mq135));
+        payload += mqtt->createFieldFloat("r0", rzero(weatherEvent));
         payload += ",";
-        payload += mqtt->createFieldFloat("ratio", ratio(mq135));
+        payload += mqtt->createFieldFloat("ratio", ratio(weatherEvent));
         payload += ",";
-        payload += mqtt->createFieldFloat("co2", co2(mq135));
+        payload += mqtt->createFieldFloat("co2", co2(weatherEvent));
         return payload;
     }
 
-    std::string createBme280TopicPayload(const char *key, BME280Device::units_t &event280) {
+    std::string createBme280TopicPayload(const char *key, Weather weatherEvent) {
         std::string payload(key);
         payload += " ";
-        payload += mqtt->createFieldFloat("temperature", temperature(event280));
+        payload += mqtt->createFieldFloat("temperature", temperature(weatherEvent));
         payload += ",";
-        payload += mqtt->createFieldFloat("humidity", humidity(event280));
+        payload += mqtt->createFieldFloat("humidity", humidity(weatherEvent));
         payload += ",";
-        payload += mqtt->createFieldFloat("pressure", pressure(event280));
+        payload += mqtt->createFieldFloat("pressure", pressure(weatherEvent));
         return payload;
     }
 };
