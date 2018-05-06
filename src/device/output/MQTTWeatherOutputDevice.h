@@ -15,6 +15,10 @@ public:
         bme280_key = key;
         bme280_topic = topic;
     }
+    void configureBH1750(const char* topic, const char* key) {
+        bh1750_key = key;
+        bh1750_topic = topic;
+    }
     void configureMQ135(const char* topic, const char* key) {
         mq135_key = key;
         mq135_topic = topic;
@@ -26,6 +30,9 @@ public:
             if (weatherEvent.bme280Connected) {
                 mqtt->mqttPublishTopic(bme280_topic, createBme280TopicPayload(bme280_key, weatherEvent).c_str());
             }
+            if (weatherEvent.bh1750Connected) {
+                mqtt->mqttPublishTopic(bh1750_topic, createBh1750TopicPayload(bh1750_key, weatherEvent).c_str());
+            }
             if (weatherEvent.mq135Connected) {
                 mqtt->mqttPublishTopic(mq135_topic, createMq135TopicPayload(mq135_key, weatherEvent).c_str());
             }
@@ -36,8 +43,17 @@ private:
     MQTTDevice *mqtt;
     const char *bme280_topic;
     const char *bme280_key;
+    const char *bh1750_topic;
+    const char *bh1750_key;
     const char *mq135_topic;
     const char *mq135_key;
+
+    std::string createBh1750TopicPayload(const char *key, Weather weatherEvent) {
+        std::string payload(key);
+        payload += " ";
+        payload += mqtt->createFieldFloat("light", lightLevel(weatherEvent));
+        return payload;
+    }
 
     std::string createMq135TopicPayload(const char *key, Weather weatherEvent) {
         std::string payload(key);

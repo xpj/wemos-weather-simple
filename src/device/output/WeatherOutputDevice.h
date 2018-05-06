@@ -29,6 +29,8 @@ protected:
     const char* temperatureUnit(Weather event) {  return bme280Device->getTemperatureUnitName(event.temperatureUnit); }
     const char* pressureUnit(Weather event) {  return bme280Device->getPressureUnitName(event.pressureUnit); }
 
+    uint16_t lightLevel(Weather event) { return event.lightLevel; }
+
     float rzero(Weather event) { return mq135Device->getRZero(event);};
     float ratio(Weather event) { return mq135Device->getRatio(event);};
     float co2(Weather event) { return mq135Device->getCo2(event);};

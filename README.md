@@ -16,6 +16,7 @@ Simple Weather Station
 - ``pio run``
 
 ## I2C Devices
+* 0x23 - BH1750 light meter
 * 0x3C - SSD1305 monochrome OLED
 * 0x40 - INA219 DC Current Sensor
 * 0x76 - BME280 Temp/Barometric/Humidity
@@ -69,6 +70,9 @@ Currently published topics are
 - Adafruit INA219
   - pio #160
   - https://platformio.org/lib/show/160/Adafruit-INA219
-- GxEPD
+- GxEPD 
   - pio #2951
   - https://platformio.org/lib/show/2951/GxEPD
+- BH1750
+  - pio #439
+  - https://platformio.org/lib/show/439/BH1750 

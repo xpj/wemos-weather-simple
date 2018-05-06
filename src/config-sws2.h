@@ -8,6 +8,7 @@
 #undef DEEP_SLEEP
 
 #define MQTT_BME280_TOPIC "sensors/sws2/bme280"
+#define MQTT_BH1750_TOPIC "sensors/sws2/bh1750"
 #define MQTT_MQ135_TOPIC "sensors/sws2/mq135"
 #define MQTT_KEY "sws2"
 

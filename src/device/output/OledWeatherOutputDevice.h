@@ -12,17 +12,22 @@ public:
     void process(Weather weatherEvent) override {
         oled->clear();
         if (weatherEvent.bme280Connected) {
-            oled->println("Temperature: ");
+            oled->print("T: ");
             oled->print(temperature(weatherEvent));
             oled->print(" ");
             oled->println(temperatureUnit(weatherEvent));
-            oled->println("Pressure:    ");
+            oled->print("P: ");
             oled->print(pressure(weatherEvent));
             oled->print(" ");
             oled->println(pressureUnit(weatherEvent));
-            oled->println("Humidity:    ");
+            oled->print("H: ");
             oled->print(humidity(weatherEvent));
             oled->println(" %");
+        }
+        if (weatherEvent.bh1750Connected) {
+            oled->print("L: ");
+            oled->print(lightLevel(weatherEvent));
+            oled->println(" lux");
         }
         if (weatherEvent.mq135Connected) {
             oled->clear();

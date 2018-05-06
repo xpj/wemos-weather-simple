@@ -8,7 +8,7 @@ public:
     SerialWeatherOutputDevice(BME280Device *bme280, MQ135Device *mq135) : WeatherOutputDevice(bme280, mq135) {
     }
 
-    void process(Weather weatherEvent) {
+    void process(Weather weatherEvent) override {
         if (weatherEvent.bme280Connected) {
             Serial.print("Temperature: ");
             Serial.print(temperature(weatherEvent));
@@ -21,6 +21,12 @@ public:
             Serial.print("Humidity:    ");
             Serial.print(humidity(weatherEvent));
             Serial.println(" %");
+            Serial.println("--------------");
+        }
+        if (weatherEvent.bh1750Connected) {
+            Serial.print("Light level: ");
+            Serial.print(lightLevel(weatherEvent));
+            Serial.println(" lux");
             Serial.println("--------------");
         }
         if (weatherEvent.mq135Connected) {
